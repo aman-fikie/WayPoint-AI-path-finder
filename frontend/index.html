@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Waypoint — Bahir Dar</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <aside class="sidebar">
+
+    <div class="brand">
+      <div class="brand-mark">W</div>
+      <div class="brand-text">
+        <span class="brand-name">Waypoint</span>
+        <span class="brand-city">Bahir Dar, Ethiopia</span>
+      </div>
+    </div>
+
+    <section class="step" id="stepOrigin">
+      <div class="step-head">
+        <div class="step-num">01</div>
+        <div class="step-label">Your position</div>
+      </div>
+      <p class="step-hint">Allow location access so we can place you on the map.</p>
+      <button id="locateBtn" class="pill-btn pill-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+        Locate me
+      </button>
+      <div class="coord-row" id="coordRow">
+        <div class="coord-chip">
+          <span class="coord-key">lat</span>
+          <span class="coord-val" id="coordLat">—</span>
+        </div>
+        <div class="coord-chip">
+          <span class="coord-key">lon</span>
+          <span class="coord-val" id="coordLon">—</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="rule"></div>
+
+    <section class="step" id="stepDest">
+      <div class="step-head">
+        <div class="step-num">02</div>
+        <div class="step-label">Destination</div>
+      </div>
+      <p class="step-hint">Type any place in Bahir Dar — a market, hospital, school, landmark.</p>
+      <div class="field-wrap">
+        <svg class="field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="searchInput" class="field-input" type="text" placeholder="e.g. Bahir Dar University…" autocomplete="off" spellcheck="false" />
+      </div>
+      <button id="searchBtn" class="pill-btn pill-accent">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Find route
+      </button>
+    </section>
+
+    <div class="rule"></div>
+
+    <section class="result-section" id="resultSection">
+      <div class="step-head">
+        <div class="step-num done">✓</div>
+        <div class="step-label">Route result</div>
+      </div>
+      <div id="info" class="result-body">
+        <div class="result-empty">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><path d="M3 12h18M12 3l9 9-9 9"/></svg>
+          <p>Route details will appear here once computed.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sidebar-footer">
+      <span>Powered by A* · Prolog · OpenStreetMap</span>
+    </footer>
+
+  </aside>
+
+  <main class="map-wrap">
+
+    <div class="map-badge" id="mapBadge">
+      <span class="badge-dot" id="badgeDot"></span>
+      <span id="badgeText">Ready</span>
+    </div>
+
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-fill"></div>
+    </div>
+
+    <div id="map"></div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+
+  <script>
+    const _geo = navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);
+    navigator.geolocation.getCurrentPosition = (ok, err, opts) => {
+      _geo(pos => {
+        document.getElementById('coordLat').textContent = pos.coords.latitude.toFixed(5);
+        document.getElementById('coordLon').textContent = pos.coords.longitude.toFixed(5);
+        document.getElementById('coordRow').classList.add('visible');
+        document.getElementById('stepOrigin').classList.add('step-done');
+        ok(pos);
+      }, err, opts);
+    };
+
+    const _fetch = window.fetch;
+    window.fetch = (url, opts) => {
+      if (typeof url === 'string' && url.includes('/route')) {
+        const bar   = document.getElementById('progressBar');
+        const dot   = document.getElementById('badgeDot');
+        const label = document.getElementById('badgeText');
+        bar.classList.add('active');
+        dot.className = 'badge-dot computing';
+        label.textContent = 'Computing…';
+        return _fetch(url, opts).then(res => {
+          bar.classList.remove('active');
+          dot.className = 'badge-dot found';
+          label.textContent = 'Route found';
+          document.getElementById('resultSection').classList.add('result-visible');
+          document.getElementById('stepDest').classList.add('step-done');
+          return res;
+        }).catch(e => {
+          bar.classList.remove('active');
+          dot.className = 'badge-dot error';
+          label.textContent = 'Error';
+          throw e;
+        });
+      }
+      return _fetch(url, opts);
+    };
+  </script>
+</body>
+</html>
