@@ -27,7 +27,7 @@
         <div class="step-num">01</div>
         <div class="step-label">Your position</div>
       </div>
-      <p class="step-hint">Allow location access so we can place you on the map.</p>
+      <p class="step-hint">Allow location access. If the pin is misplaced, drag it to your actual location.</p>
       <button id="locateBtn" class="pill-btn pill-primary">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
         Locate me
@@ -99,44 +99,5 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="app.js"></script>
-
-  <script>
-    const _geo = navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);
-    navigator.geolocation.getCurrentPosition = (ok, err, opts) => {
-      _geo(pos => {
-        document.getElementById('coordLat').textContent = pos.coords.latitude.toFixed(5);
-        document.getElementById('coordLon').textContent = pos.coords.longitude.toFixed(5);
-        document.getElementById('coordRow').classList.add('visible');
-        document.getElementById('stepOrigin').classList.add('step-done');
-        ok(pos);
-      }, err, opts);
-    };
-
-    const _fetch = window.fetch;
-    window.fetch = (url, opts) => {
-      if (typeof url === 'string' && url.includes('/route')) {
-        const bar   = document.getElementById('progressBar');
-        const dot   = document.getElementById('badgeDot');
-        const label = document.getElementById('badgeText');
-        bar.classList.add('active');
-        dot.className = 'badge-dot computing';
-        label.textContent = 'Computing…';
-        return _fetch(url, opts).then(res => {
-          bar.classList.remove('active');
-          dot.className = 'badge-dot found';
-          label.textContent = 'Route found';
-          document.getElementById('resultSection').classList.add('result-visible');
-          document.getElementById('stepDest').classList.add('step-done');
-          return res;
-        }).catch(e => {
-          bar.classList.remove('active');
-          dot.className = 'badge-dot error';
-          label.textContent = 'Error';
-          throw e;
-        });
-      }
-      return _fetch(url, opts);
-    };
-  </script>
 </body>
 </html>
