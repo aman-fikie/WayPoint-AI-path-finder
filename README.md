@@ -49,7 +49,7 @@ In a second terminal, from the project root:
 
 ```bash
 cd frontend
-python -m http.server 3000
+py -m http.server 3000
 ```
 
 Then visit <http://localhost:3000>.
